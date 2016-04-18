@@ -2,8 +2,7 @@ import pathlib
 import pytz
 import datetime
 import urllib
-
-srcpath = pathlib.Path('.')
+import re
 
 class Writer(object):
     def root_in(self):
@@ -51,10 +50,17 @@ class TextWriter(Writer):
         print('    -', str(path))
 
 
-def foreachpersonaldir(d, writer):
-    # print dirname
-    writer.dirname(d)
-    # show timestamp if exists
+def foreachpersonaldir(d):
+    """個人フォルダの中をパースし, 必要な情報を取り出す
+    timestamp.txt がなければ None を返す
+
+    {timestamp: DateTimeObject,
+     attachments: [relative path, pathlib.Path object]}
+    """
+
+    obj = {'timezone': None,
+           'attachments': []}
+
     tpath = d / 'timestamp.txt'
     if tpath.exists():
         tstext = tpath.read_text()
@@ -63,25 +69,123 @@ def foreachpersonaldir(d, writer):
         # see http://nekoya.github.io/blog/2013/06/21/python-datetime/
         tstamp = pytz.utc.localize(tstamp)  # attatch tzinfo as utc
         tstamp = tstamp.astimezone(pytz.timezone('Asia/Tokyo')) # apply JST
-        writer.timestamp(tstamp)
+        obj['timestamp'] = tstamp
 
         # show submitted files
         attachment_dir = d / '提出物の添付'
-        writer.attachment_in()
         for f in attachment_dir.glob('*'):
-            writer.attachment_elem(f)
+            obj['attachments'].append(f)
+
+        return obj
+
+    return None
+
+
+
+def load_id_group_mapping(path, encoding='cp932'):
+    """ファイルを読み込み, 学籍番号とグループ, グループ内番号のマップを作る
+       ファイルは, 1行目がヘッダ, 以降
+           ID	姓	名	班	番号	採点グループ	採点グループ番号	
+       とタブ区切り
+    path は pathlib.Path オブジェクト
+    encoding はファイルの文字コード(たいていcp932 か utf8)
+    """
+
+    idlist = []
+
+    with path.open(encoding=encoding) as f:
+        # 一行スキップ
+        next(f)
+        for line in f.readlines():
+            # タブでパース
+            sps = line.split('\t')
+            idlist.append({
+                'id': sps[0],
+                'surname': sps[1],
+                'givenname': sps[2],
+                'group': int(sps[3]),
+                'n_in_group': int(sps[4]),
+                'asses_grp': sps[5],
+                'n_in_agrp': int(sps[6])})
+
+    return idlist
+
+def create_contents(root=pathlib.Path('.')):
+    """パス上のフォルダを検索し, {"id":"htmlコンテンツ"}のマップを作る
+    root は検索パス
+    """
+
+    id_contents_map = {}
+
+    dirs = root.glob('*,(*)')
+    for d in dirs:
+        # () 内のIDを取り出す.
+        reobj = re.compile(u'.+,\((?P<id>[0-9x]+)\)')
+        mobj = reobj.match(d.name)
+        if mobj:
+            # フォルダの中をパースする.
+            id_contents_map[mobj.group('id')] = foreachpersonaldir(d)
+
+    return id_contents_map
+
+
 
 def main():
 
-    # writer = TextWriter()
-    writer = HTMLWriter()
-    writer.root_in()
+    idlist = load_id_group_mapping(pathlib.Path('ID-group-map.txt'), encoding='cp932')
 
-    dirs = srcpath.glob('*,(*)')
-    for d in dirs:
-        foreachpersonaldir(d, writer)
+    id_contents_map = create_contents()
 
-    writer.root_out()
+    group = 0
+    print('<html><body>')
+
+    # 各班へのリンク
+    groups = [list(range(1, 7)),
+              list(range(7, 7*2)),
+              list(range(7*2, 7*3)),
+              list(range(7*3, 7*4)),
+              list(range(7*4, 7*5)),
+              [40, 41]]
+            
+    for gg in groups:
+        for g in gg:
+            print('<a href="#group{0:d}">{0:d}班</a>, '.format(g), end='')
+        print('<br/>')
+
+    for p in idlist:
+        # 新しい班?
+        if p['group'] != group:
+            group = p['group']
+            print('<hr><hr><h2 id="group{0:d}">{0:d}班</h2>'.format(group))
+
+        # 氏名を表示
+        print('<hr><h3>{0:s} {1:s}</h3>'.format(p['surname'], p['givenname']))
+        
+        # コンテンツを確認
+        c = id_contents_map.get(p['id'], None)
+        if c is None:
+            print('提出未確認<br/>')
+        else:
+            # タイムスタンプ
+            print('timestamp: {0:s}<br/>'.format(str(c['timestamp'])))
+            # 添付ファイル
+            print('attachments:<br/>')
+            for a in c['attachments']:
+                # リンクパスをurl形式に変換
+                relurl = urllib.parse.urlunsplit(('', '', str(a.as_posix()), '', ''))
+                print('<a href="{0:s}">'.format(relurl), end='')
+                if a.suffix.lower() in ('.png', '.jpg', '.jpeg'):
+                    print(relurl, '<br/>', sep='', end='')
+                    # ビットマップならば埋め込み
+                    print('<img src="{0:s}" width=40%>'.format(relurl), end='')
+                else:
+                    print(relurl, end='')
+                print('</a><br/>')
+
+    print('</body></html>')
+
+
+
 
 if __name__ == '__main__':
     main()
