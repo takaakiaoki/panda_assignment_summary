@@ -3,6 +3,8 @@ import pytz
 import datetime
 import urllib
 import re
+import io
+import sys
 
 class Writer(object):
     def root_in(self):
@@ -136,10 +138,17 @@ def main():
 
     id_contents_map = create_contents()
 
+    html_output_encoding = 'utf-8'
+    writer = io.TextIOWrapper(sys.stdout.buffer, encoding=html_output_encoding, newline='\n')
+    
     group = 0
-    print('<html><body>')
+    print('<!DOCTYPE html>\n', file=writer)
+    print('<html>\n', file=writer)
+    print('  <meta charset="{0:s}">'.format(html_output_encoding), file=writer)
+    print('<body>', file=writer)
 
     # 各班へのリンク
+    print('<a name="top"></a>', file=writer)
     groups = [list(range(1, 7)),
               list(range(7, 7*2)),
               list(range(7*2, 7*3)),
@@ -149,40 +158,45 @@ def main():
             
     for gg in groups:
         for g in gg:
-            print('<a href="#group{0:d}">{0:d}班</a>, '.format(g), end='')
-        print('<br/>')
+            print('<a href="#group{0:d}">{0:d}班</a>, '.format(g), end='', file=writer)
+        print('<br/>', file=writer)
 
     for p in idlist:
         # 新しい班?
         if p['group'] != group:
             group = p['group']
-            print('<hr><hr><h2 id="group{0:d}">{0:d}班</h2>'.format(group))
+            print('<hr><hr><h2 id="group{0:d}">{0:d}班</h2>'.format(group), file=writer)
+            print('<span size="-2"><a href="#top">Top</a></span>', file=writer)
 
         # 氏名を表示
-        print('<hr><h3>{0:s} {1:s}</h3>'.format(p['surname'], p['givenname']))
+        print('<hr><h3>{0:s} {1:s}</h3>'.format(p['surname'], p['givenname']), file=writer)
         
         # コンテンツを確認
         c = id_contents_map.get(p['id'], None)
         if c is None:
-            print('提出未確認<br/>')
+            print('提出未確認<br/>', file=writer)
         else:
             # タイムスタンプ
-            print('timestamp: {0:s}<br/>'.format(str(c['timestamp'])))
+            print('timestamp: {0:s}<br/>'.format(str(c['timestamp'])), file=writer)
             # 添付ファイル
-            print('attachments:<br/>')
+            print('attachments:<br/>', file=writer)
             for a in c['attachments']:
                 # リンクパスをurl形式に変換
                 relurl = urllib.parse.urlunsplit(('', '', str(a.as_posix()), '', ''))
-                print('<a href="{0:s}">'.format(relurl), end='')
+                # in sake for working on IE11 and Edge (and other browsers)
+                # do not escape multibyte URL
+                # linkurl = urllib.parse.quote(relurl)
+                linkurl = relurl
+                print('<a href="{0:s}">'.format(linkurl), end='', file=writer)
                 if a.suffix.lower() in ('.png', '.jpg', '.jpeg'):
-                    print(relurl, '<br/>', sep='', end='')
+                    print(relurl, '<br/>', sep='', end='', file=writer)
                     # ビットマップならば埋め込み
-                    print('<img src="{0:s}" width=40%>'.format(relurl), end='')
+                    print('<img src="{0:s}" width=40%>'.format(linkurl), end='', file=writer)
                 else:
-                    print(relurl, end='')
-                print('</a><br/>')
+                    print(relurl, end='', file=writer)
+                print('</a><br/>', file=writer)
 
-    print('</body></html>')
+    print('</body></html>', file=writer)
 
 
 
