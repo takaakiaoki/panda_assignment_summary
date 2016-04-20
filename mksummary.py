@@ -5,6 +5,7 @@ import urllib
 import re
 import io
 import sys
+import argparse
 
 class Writer(object):
     def root_in(self):
@@ -132,14 +133,18 @@ def create_contents(root=pathlib.Path('.')):
 
 
 
-def main():
+def main(output_buffer, idlistpath, html_output_encoding='utf-8'):
+    """
+    Args:
+        output (File): binary IO to output
+        idlistpath (pathlib.Path): path object to read id-sequence data
+    """
 
-    idlist = load_id_group_mapping(pathlib.Path('ID-group-map.txt'), encoding='cp932')
+    idlist = load_id_group_mapping(idlistpath, encoding='cp932')
 
     id_contents_map = create_contents()
 
-    html_output_encoding = 'utf-8'
-    writer = io.TextIOWrapper(sys.stdout.buffer, encoding=html_output_encoding, newline='\n')
+    writer = io.TextIOWrapper(output_buffer, encoding=html_output_encoding, newline='\n')
     
     group = 0
     print('<!DOCTYPE html>\n', file=writer)
@@ -202,4 +207,13 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('output', nargs='?', type=str, default='summary.html',
+            help='default output filename (default: %(default))')
+
+    args = parser.parse_args()
+
+    with open(args.output, 'wb') as output_buffer:
+        idlistpath = pathlib.Path('ID-group-map.txt')
+        main(output_buffer, idlistpath)
