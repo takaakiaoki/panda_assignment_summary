@@ -47,3 +47,21 @@ Mac, Unix の場合, mksummary.exe の代わりに mksummary.py を配置し, �
 * python のバージョンは, 3.4 または 3.5 で動作確認をしています.
 * mksummary.py に必要は標準以外のモジュールは以下の通りです. PyPIから入手できます.
   - pytz  (pip install pytz)
+
+開発者向け情報
+==============
+
+.py から .exe の生成は PyInstaller (http://www.pyinstaller.org/) を使用しています.
+
+  pip install pyinstaller
+ 
+でインストール(同時に pypiwin32 のインストールされます),
+
+  pyinstaller --onefile mksummary.py
+
+で実行ファイルが dist ディレクトリの下に生成されます.
+pythonが空白を含むパスにインストールされている場合, 'failed to create process' のエラーにより動かない場合があります.
+
+http://stackoverflow.com/questions/31808180/installing-pyinstaller-via-pip-leads-to-failed-to-create-process
+
+に従って, pyinstaller 関連のスクリプトの1行目にクオーテーションマークを入れてください.
