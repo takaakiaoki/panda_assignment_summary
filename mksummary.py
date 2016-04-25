@@ -4,7 +4,6 @@ import datetime
 import urllib
 import re
 import io
-import sys
 import argparse
 
 
@@ -35,7 +34,7 @@ def foreachpersonaldir(d):
         # loaded timestamp is in utc, translate to jst
         # see http://nekoya.github.io/blog/2013/06/21/python-datetime/
         tstamp = pytz.utc.localize(tstamp)  # attatch tzinfo as utc
-        tstamp = tstamp.astimezone(pytz.timezone('Asia/Tokyo')) # apply JST
+        tstamp = tstamp.astimezone(pytz.timezone('Asia/Tokyo'))  # apply JST
         obj['timestamp'] = tstamp
 
         # html テキスト d.name + '_submissionText.html'
@@ -43,7 +42,6 @@ def foreachpersonaldir(d):
         if spath.exists():
             # BOM付きutf8
             obj['submissionText'] = spath.open('r', encoding='utf-8-sig').read()
-
 
         # show submitted files
         attachment_dir = d / '提出物の添付'
@@ -53,21 +51,89 @@ def foreachpersonaldir(d):
     return obj
 
 
-def walk_personal_dirs(root=pathlib.Path('.')):
+def walk_personal_dirs_idlist(idlist, root=pathlib.Path('.')):
     """パス上のフォルダを検索し, foreachpersondir のコンテンツをiterativeに取得する.
 
     Args:
-        root (pathlib.Path) 検索開始パス
+        idlist (pathlib.Path): 学籍番号, 氏, 名, 班, 班内番号, (あとは任意)のリスト
+            1行目はヘッダファイル, カラムはタブ区切り, 以下は例
+                ID	姓	名	班	番号	採点グループ	採点グループ番
+                1235467980	京大	太郎	1	1	a	1
+                3124657818	吉田	花子	1	2	a	2
+                1423576792	二本松	一郎	2	1	a	3
+                1253468693	桂	さくら	2	4	a	4
+        root (pathlib.Path): 検索開始パス
+
+    Yields: dict object connecting row data and result from foreachpersonaldir
+        {
+            id: str          # 1st column of idlist
+            surname: str     # 2nd
+            givenname: str   # 3rd
+            group: int       # 4th
+            n_in_group: int  # 5th
+            personaldir: None or (result from foreachpersonaldir)
+        }
     """
 
-    dirs = root.glob('*,(*)')
-    for d in dirs:
-        # () 内のIDを取り出す.
-        reobj = re.compile(u'.+,\((?P<id>[0-9x]+)\)')
-        mobj = reobj.match(d.name)
-        if mobj:
-            # フォルダの中をパースする.
-            yield foreachpersonaldir(d)
+    with idlist.open('rt') as f:
+        # skip header
+        next(f)
+        for line in f.readlines():
+            # タブでパース
+            sps = line.split('\t')
+            # 個人フォルダを構成
+            obj = {'id': sps[0],
+                   'surname': sps[1],
+                   'givenname': sps[2],
+                   'group': int(sps[3]),
+                   'n_in_group': int(sps[4]),
+                   'personaldir': None}
+            dirpath = root / (sps[1] + ' ' + sps[2] + ',(' + sps[0] + ')')
+
+            if dirpath.is_dir():
+                obj['personaldir'] = foreachpersonaldir(dirpath)
+
+            yield obj
+
+
+def render_personalfolder(p, writer):
+    """ foreachpersonaldir の内容を html で出力する.
+    Args:
+        p (dict): foreachpersonaldir の結果
+        writer (File): htmlの出力対象
+    """
+    # タイムスタンプでコンテンツを確認
+    if p['timestamp'] is None:
+        print('提出未確認<br/>', file=writer)
+    else:
+        # タイムスタンプ
+        print('timestamp: {0:s}<br/>'.format(str(p['timestamp'])), file=writer)
+        # HTML
+        if p['submissionText']:
+            print('submissionText:<br/>', file=writer)
+            print('<div class="submissionText">', file=writer)
+            print(p['submissionText'], file=writer)
+            print('</div>', file=writer)
+        # 添付ファイル
+        if p['attachments']:
+            print('attachments:<br/>', file=writer)
+            for a in p['attachments']:
+                # リンクパスをurl形式に変換
+                relurl = urllib.parse.urlunsplit(('', '', str(a.as_posix()), '', ''))
+                # in sake for working on IE11 and Edge (and other browsers)
+                # do not escape multibyte URL
+                # linkurl = urllib.parse.quote(relurl)
+                linkurl = relurl
+                print('<a href="{0:s}">'.format(linkurl), end='', file=writer)
+                if a.suffix.lower() in ('.png', '.jpg', '.jpeg', '.bmp'):
+                    print(relurl, '<br/>', sep='', end='', file=writer)
+                    # ビットマップならば埋め込み
+                    print('<img src="{0:s}" width=40%>'.format(linkurl),
+                          end='', file=writer)
+                else:
+                    print(relurl, end='', file=writer)
+                print('</a><br/>', file=writer)
+
 
 def main(output_buffer, root=pathlib.Path('.'), html_output_encoding='utf-8'):
     """
@@ -77,58 +143,57 @@ def main(output_buffer, root=pathlib.Path('.'), html_output_encoding='utf-8'):
         html_output_encoding: encoding for output html
     """
 
+    idlist = pathlib.Path('ID-group-map.txt')
+
     writer = io.TextIOWrapper(output_buffer, encoding=html_output_encoding, newline='\n')
-    
+
     print('<!DOCTYPE html>\n', file=writer)
     print('<html>\n', file=writer)
-    print('  <meta charset="{0:s}">'.format(html_output_encoding), file=writer)
-    print('  <style type="text/css">', file=writer)
+    print('\t<meta charset="{0:s}">'.format(html_output_encoding), file=writer)
+    print('\t<style type="text/css">', file=writer)
     print('''
 div.submissionText {
 	background: #f0f0f0;
 	border: medium solid #0f0f0f;
 	font-size: smaller;
-        margin: 0 auto;
-        width: 90%;
+	margin: 0 auto;
+	width: 90%;
 }''', file=writer)
-    print('  </style>', file=writer)
+    print('\t</style>', file=writer)
     print('<body>', file=writer)
 
-    for p in walk_personal_dirs(root):
-        # フォルダ名を表示
-        print('<hr><h3>{0:s}</h3>'.format(p['dirname']), file=writer)
-        
-        # タイムスタンプでコンテンツを確認
-        if p['timestamp'] is None:
-            print('提出未確認<br/>', file=writer)
+    # 各班へのリンク
+    groups = [list(range(1, 7)),
+              list(range(7, 7*2)),
+              list(range(7*2, 7*3)),
+              list(range(7*3, 7*4)),
+              list(range(7*4, 7*5)),
+              [40, 41]]
+
+    print('<nav><a name="top"></a>', file=writer)
+    for gg in groups:
+        for g in gg:
+            print('<a href="#group{0:d}">{0:d}班</a>, '.format(g), end='', file=writer)
+        print('<br/>', file=writer)
+    print('</nav>', file=writer)
+
+    group = 0
+    for p in walk_personal_dirs_idlist(idlist, root):
+        # 新しい班?
+        if p['group'] != group:
+            group = p['group']
+            print('<hr><hr><h2 id="group{0:d}">{0:d}班</h2>'.format(group), file=writer)
+            print('<span size="-2"><a href="#top">Top</a></span>', file=writer)
+
+        # 氏名を表示
+        print('<hr><h3>{0:s} {1:s}</h3>'.format(p['surname'], p['givenname']), file=writer)
+
+        # コンテンツを確認
+        c = p['personaldir']
+        if c is None:
+            print('フォルダが確認できません<br/>', file=writer)
         else:
-            # タイムスタンプ
-            print('timestamp: {0:s}<br/>'.format(str(p['timestamp'])), file=writer)
-            # HTML
-            if p['submissionText']:
-                print('submissionText:<br/>', file=writer)
-                print('<div class="submissionText">', file=writer)
-                print(p['submissionText'], file=writer)
-                print('</div>', file=writer)
-            # 添付ファイル
-            if p['attachments']:
-                print('attachments:<br/>', file=writer)
-                for a in p['attachments']:
-                    # リンクパスをurl形式に変換
-                    relurl = urllib.parse.urlunsplit(('', '', str(a.as_posix()), '', ''))
-                    # in sake for working on IE11 and Edge (and other browsers)
-                    # do not escape multibyte URL
-                    # linkurl = urllib.parse.quote(relurl)
-                    linkurl = relurl
-                    print('<a href="{0:s}">'.format(linkurl), end='', file=writer)
-                    if a.suffix.lower() in ('.png', '.jpg', '.jpeg', '.bmp'):
-                        print(relurl, '<br/>', sep='', end='', file=writer)
-                        # ビットマップならば埋め込み
-                        print('<img src="{0:s}" width=40%>'.format(linkurl),
-                              end='', file=writer)
-                    else:
-                        print(relurl, end='', file=writer)
-                    print('</a><br/>', file=writer)
+            render_personalfolder(c, writer)
 
     print('</body></html>', file=writer)
 
@@ -137,9 +202,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument('output', nargs='?', type=str, default='summary.html',
-            help='default output filename (default: %(default))')
+                        help='default output filename (default: %(default))')
     parser.add_argument('--root', type=str, default='.',
-            help='root directory (default: %(default))')
+                        help='root directory (default: %(default))')
 
     args = parser.parse_args()
 
