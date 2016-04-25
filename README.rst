@@ -15,10 +15,11 @@ mksummary.py (mksummary.exe) は個々のフォルダを巡回し,
 
 を一つのhtmlファイルとして生成します.
 
+
 利用方法
 ========
 
-windowsの場合, mksummary.exe を入手してください.
+windowsの場合, mksummary.exe (https://github.com/takaakiaoki/panda_assignment_summary/releases) を入手してください.
 この実行ファイルをPandAの提出物個人フォルダと同じレベルに配置します.
 mksummary.exe を実行すると summary.html が作製されます.
 
@@ -44,8 +45,8 @@ PandA(Sakai)の提出物は次のような構成をとります.
 
 Mac, Unix の場合, mksummary.exe の代わりに mksummary.py を配置し, これを実行します. 
 
-* python のバージョンは, 3.4 または 3.5 で動作確認をしています.
-* mksummary.py に必要は標準以外のモジュールは以下の通りです. PyPIから入手できます.
+* python のバージョンは, 3.4 または 3.5 で動作確認をしています. 
+* mksummary.py に必要な標準以外のモジュールは以下の通りです. PyPIから入手できます.
   - pytz  (pip install pytz)
 
 開発者向け情報
@@ -65,3 +66,9 @@ pythonが空白を含むパスにインストールされている場合, 'faile
 http://stackoverflow.com/questions/31808180/installing-pyinstaller-via-pip-leads-to-failed-to-create-process
 
 に従って, pyinstaller 関連のスクリプトの1行目にクオーテーションマークを入れてください.
+
+謝辞
+====
+
+このツールは京都大学国際高等教育院の喜多一先生のツール・アイディアを基に再構成したものです. この場をお借りして御礼申し上げます.
+
