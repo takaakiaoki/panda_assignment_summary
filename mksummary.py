@@ -10,10 +10,22 @@ import argparse
 
 def foreachpersonaldir(d):
     """個人フォルダの中をパースし, 必要な情報を取り出す
+
+    Args:
+        d (pathlib.Path): folder name to parse
+
+    Returns:
+        dictionary of folder contents,
+        {'dirname': str()   # name of folder
+         'timestamp': None, # content of timestamp.txt
+         'submissionText': None,      # content of (dirname)_submissionText.html
+         'attachments': []  # attached files; list of pathlib.Path()
+         }
     """
 
     obj = {'dirname': str(d),
            'timestamp': None,
+           'submissionText': None,
            'attachments': []}
 
     tpath = d / 'timestamp.txt'
@@ -25,6 +37,13 @@ def foreachpersonaldir(d):
         tstamp = pytz.utc.localize(tstamp)  # attatch tzinfo as utc
         tstamp = tstamp.astimezone(pytz.timezone('Asia/Tokyo')) # apply JST
         obj['timestamp'] = tstamp
+
+        # html テキスト d.name + '_submissionText.html'
+        spath = d / (d.name + '_submissionText.html')
+        if spath.exists():
+            # BOM付きutf8
+            obj['submissionText'] = spath.open('r', encoding='utf-8-sig').read()
+
 
         # show submitted files
         attachment_dir = d / '提出物の添付'
@@ -63,6 +82,16 @@ def main(output_buffer, root=pathlib.Path('.'), html_output_encoding='utf-8'):
     print('<!DOCTYPE html>\n', file=writer)
     print('<html>\n', file=writer)
     print('  <meta charset="{0:s}">'.format(html_output_encoding), file=writer)
+    print('  <style type="text/css">', file=writer)
+    print('''
+div.submissionText {
+	background: #f0f0f0;
+	border: medium solid #0f0f0f;
+	font-size: smaller;
+        margin: 0 auto;
+        width: 90%;
+}''', file=writer)
+    print('  </style>', file=writer)
     print('<body>', file=writer)
 
     for p in walk_personal_dirs(root):
@@ -75,23 +104,31 @@ def main(output_buffer, root=pathlib.Path('.'), html_output_encoding='utf-8'):
         else:
             # タイムスタンプ
             print('timestamp: {0:s}<br/>'.format(str(p['timestamp'])), file=writer)
+            # HTML
+            if p['submissionText']:
+                print('submissionText:<br/>', file=writer)
+                print('<div class="submissionText">', file=writer)
+                print(p['submissionText'], file=writer)
+                print('</div>', file=writer)
             # 添付ファイル
-            print('attachments:<br/>', file=writer)
-            for a in p['attachments']:
-                # リンクパスをurl形式に変換
-                relurl = urllib.parse.urlunsplit(('', '', str(a.as_posix()), '', ''))
-                # in sake for working on IE11 and Edge (and other browsers)
-                # do not escape multibyte URL
-                # linkurl = urllib.parse.quote(relurl)
-                linkurl = relurl
-                print('<a href="{0:s}">'.format(linkurl), end='', file=writer)
-                if a.suffix.lower() in ('.png', '.jpg', '.jpeg', '.bmp'):
-                    print(relurl, '<br/>', sep='', end='', file=writer)
-                    # ビットマップならば埋め込み
-                    print('<img src="{0:s}" width=40%>'.format(linkurl), end='', file=writer)
-                else:
-                    print(relurl, end='', file=writer)
-                print('</a><br/>', file=writer)
+            if p['attachments']:
+                print('attachments:<br/>', file=writer)
+                for a in p['attachments']:
+                    # リンクパスをurl形式に変換
+                    relurl = urllib.parse.urlunsplit(('', '', str(a.as_posix()), '', ''))
+                    # in sake for working on IE11 and Edge (and other browsers)
+                    # do not escape multibyte URL
+                    # linkurl = urllib.parse.quote(relurl)
+                    linkurl = relurl
+                    print('<a href="{0:s}">'.format(linkurl), end='', file=writer)
+                    if a.suffix.lower() in ('.png', '.jpg', '.jpeg', '.bmp'):
+                        print(relurl, '<br/>', sep='', end='', file=writer)
+                        # ビットマップならば埋め込み
+                        print('<img src="{0:s}" width=40%>'.format(linkurl),
+                              end='', file=writer)
+                    else:
+                        print(relurl, end='', file=writer)
+                    print('</a><br/>', file=writer)
 
     print('</body></html>', file=writer)
 
