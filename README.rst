@@ -1,5 +1,5 @@
 ##########################
-panda_assignment mksummary
+panda_assignment_mksummary
 ##########################
 
 PandA(Sakai) でダウンロードした課題ファイルは,
