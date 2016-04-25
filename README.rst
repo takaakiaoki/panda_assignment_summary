@@ -46,6 +46,7 @@ Mac, Unix の場合, mksummary.exe の代わりに mksummary.py を配置し, �
 
 * python のバージョンは, 3.4 または 3.5 で動作確認をしています.
 * mksummary.py に必要は標準以外のモジュールは以下の通りです. PyPIから入手できます.
+
   - pytz  (pip install pytz)
 
 開発者向け情報
