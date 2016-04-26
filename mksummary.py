@@ -96,11 +96,12 @@ def walk_personal_dirs_idlist(idlist, root=pathlib.Path('.')):
             yield obj
 
 
-def render_personalfolder(p, writer):
+def render_personalfolder(p, writer, enable_viewerjs=False):
     """ foreachpersonaldir の内容を html で出力する.
     Args:
         p (dict): foreachpersonaldir の結果
         writer (File): htmlの出力対象
+        enable_viwerjs (bool): ViewerJS でのプレビューに対応する.
     """
     # タイムスタンプでコンテンツを確認
     if p['timestamp'] is None:
@@ -125,22 +126,31 @@ def render_personalfolder(p, writer):
                 # linkurl = urllib.parse.quote(relurl)
                 linkurl = relurl
                 print('<a href="{0:s}">'.format(linkurl), end='', file=writer)
-                if a.suffix.lower() in ('.png', '.jpg', '.jpeg', '.bmp'):
+                suffix = a.suffix.lower()
+                if suffix in ('.png', '.jpg', '.jpeg', '.bmp'):
                     print(relurl, '<br/>', sep='', end='', file=writer)
                     # ビットマップならば埋め込み
                     print('<img class="attachedimg" src="{0:s}">'.format(linkurl),
                           end='', file=writer)
+                    print('</a><br/>', file=writer)
+                elif enable_viewerjs and (suffix in ('.pdf', '.odf')):
+                    #  ViewerJS によるプレビュー画面埋め込み
+                    print(relurl, '</a><br/>', file=writer)
+                    print('<iframe class="attacheddoc" src="_summary/ViewerJS/#../../{0:s}" allowfullscreen webkitallowfullscreen></iframe>'.format(linkurl),
+                          end='', file=writer)
                 else:
-                    print(relurl, end='', file=writer)
-                print('</a><br/>', file=writer)
+                    print('{0:s}</a><br/>'.format(linkurl), file=writer)
 
 
-def main(output_buffer, root=pathlib.Path('.'), html_output_encoding='utf-8'):
+def main(output_buffer, root=pathlib.Path('.'),
+         html_output_encoding='utf-8',
+         enable_viewerjs='False'):
     """
     Args:
         output_buffer (File): binary IO to output
-        root: root path to walk
-        html_output_encoding: encoding for output html
+        root (pathlib.Path): root path to walk
+        html_output_encoding (str): encoding for output html
+        enable_viwerjs (bool): ViewerJS でのプレビューに対応する.
     """
 
     idlist = pathlib.Path('ID-group-map.txt')
@@ -160,7 +170,11 @@ def main(output_buffer, root=pathlib.Path('.'), html_output_encoding='utf-8'):
 	width: 90%;
 }
 img.attachedimg {
-    width: 566px;
+    width: 510px;
+}
+iframe.attacheddoc {
+    width: 510px;
+    height: 720px;
 }
 ''', file=writer)
     print('\t</style>', file=writer)
@@ -198,7 +212,7 @@ img.attachedimg {
         if c is None:
             print('フォルダが確認できません<br/>', file=writer)
         else:
-            render_personalfolder(c, writer)
+            render_personalfolder(c, writer, enable_viewerjs)
 
     print('</body></html>', file=writer)
 
@@ -207,11 +221,15 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument('output', nargs='?', type=str, default='summary.html',
-                        help='default output filename (default: %(default))')
+                        help='default output filename (default: %(default)s)')
     parser.add_argument('--root', type=str, default='.',
-                        help='root directory (default: %(default))')
+                        help='root directory (default: %(default)s)')
+    parser.add_argument('--viewerjs', default=False,
+                        action='store_true',
+                        help='enable ViewerJS PDF viewer')
 
     args = parser.parse_args()
 
     with open(args.output, 'wb') as output_buffer:
-        main(output_buffer, root=pathlib.Path(args.root))
+        main(output_buffer, root=pathlib.Path(args.root),
+             enable_viewerjs=args.viewerjs)

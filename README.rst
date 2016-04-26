@@ -50,6 +50,60 @@ Mac, Unix の場合, mksummary.exe の代わりに mksummary.py を配置し, �
 
   - pytz  (pip install pytz)
 
+ViewerJS を用いPDFファイルをプレビューする
+==========================================
+
+ViewrJS (http://viewerjs.org/) を用いることで PDF, ODF ファイルのプレビューを埋め込むことができます.
+ただし, 以下の準備が必要です.
+
+.. note::
+
+   javascript は原則としてローカルファイルへのアクセスを禁止します.
+   このため, 手元のPC内にhttpサーバーを立て, サーバー-クライアントとして動作させます.
+
+0. python をインストールします. 
+1. ViewerJS を入手します (http://viewerjs.org/releases/ViewerJS-latest.zip をダウンロード)
+2. このファイルを展開し, 以下のように配置します.
+
+   ::
+
+      bulk_download.zip
+        - 課題名/
+          - 学生氏名, (学生証番号)/
+            - 学生氏名, (学生証番号)_submission_text.html
+            - timestamp.txt
+            - 提出物の添付/
+              - 添付ファイル1
+              - 添付ファイル2
+              :
+          - 学生氏名, (学生証番号)/
+          - 学生氏名, (学生証番号)/
+          - 学生氏名, (学生証番号)/
+          :
+          - mksummary.exe <-- mksummary.exe でも可
+          - summary.html 
+          - _summary/ <-- このフォルダを作成します
+            - ViewerJS/ <-- 展開した ViewerJS フォルダをここにコピーします
+              - images/
+              - compatibility.js
+              - example.local.css
+              :
+
+3. mksummary.exe または mksummary.py を :option:`viewerjs` オプション付きで実行します. コマンドプロンプトを開き
+
+      mksummary.exe --viewjs
+   
+   または
+
+      python mksummary.py --viewjs
+
+4. httpサーバーを立ち上げます. Python にはシンプルなhttpサーバーモジュールが付属しているのでこれを利用します.
+
+      python -m http.server
+
+5. ブラウザを開き, http://localhost:8000/summary.html にアクセスします.
+
+
 開発者向け情報
 ==============
 
