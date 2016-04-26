@@ -128,7 +128,7 @@ def render_personalfolder(p, writer):
                 if a.suffix.lower() in ('.png', '.jpg', '.jpeg', '.bmp'):
                     print(relurl, '<br/>', sep='', end='', file=writer)
                     # ビットマップならば埋め込み
-                    print('<img src="{0:s}" width=40%>'.format(linkurl),
+                    print('<img class="attachedimg" src="{0:s}">'.format(linkurl),
                           end='', file=writer)
                 else:
                     print(relurl, end='', file=writer)
@@ -158,7 +158,11 @@ def main(output_buffer, root=pathlib.Path('.'), html_output_encoding='utf-8'):
 	font-size: smaller;
 	margin: 0 auto;
 	width: 90%;
-}''', file=writer)
+}
+img.attachedimg {
+    width: 566px;
+}
+''', file=writer)
     print('\t</style>', file=writer)
     print('</head>', file=writer)
     print('<body>', file=writer)
