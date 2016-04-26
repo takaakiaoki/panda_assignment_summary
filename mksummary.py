@@ -147,12 +147,12 @@ def main(output_buffer, root=pathlib.Path('.'), html_output_encoding='utf-8'):
 
     writer = io.TextIOWrapper(output_buffer, encoding=html_output_encoding, newline='\n')
 
-    print('<!DOCTYPE html>\n', file=writer)
-    print('<html>\n', file=writer)
+    print('<!DOCTYPE html>', file=writer)
+    print('<html>', file=writer)
+    print('<head>', file=writer)
     print('\t<meta charset="{0:s}">'.format(html_output_encoding), file=writer)
     print('\t<style type="text/css">', file=writer)
-    print('''
-div.submissionText {
+    print('''div.submissionText {
 	background: #f0f0f0;
 	border: medium solid #0f0f0f;
 	font-size: smaller;
@@ -160,6 +160,7 @@ div.submissionText {
 	width: 90%;
 }''', file=writer)
     print('\t</style>', file=writer)
+    print('</head>', file=writer)
     print('<body>', file=writer)
 
     # 各班へのリンク
