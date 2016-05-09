@@ -182,14 +182,18 @@ page.document.close();
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
+    parser.add_argument('root', nargs='?', type=str, default='.',
+            help='root directory or file path under root (default: %(default)s). If file path is given, directory part is used as ROOT')
     parser.add_argument('--output', type=str, default='summary.html',
             help='default output filename (default: %(default)s). file is output as "ROOT/OUTPUT"')
-    parser.add_argument('--root', type=str, default='.',
-            help='root directory (default: %(default)s)')
 
     args = parser.parse_args()
 
-    outputpath = pathlib.Path(args.root) / args.output
+    rootpath = pathlib.Path(args.root)
+    if rootpath.is_file():
+        rootpath = rootpath.parent
+
+    outputpath = rootpath / args.output
 
     with outputpath.open('wb') as output_buffer:
-        main(output_buffer, root=pathlib.Path(args.root))
+        main(output_buffer, root=rootpath)
