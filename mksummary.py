@@ -83,7 +83,8 @@ def main(output_buffer, root=pathlib.Path('.'), html_output_encoding='utf-8'):
     personal_dirs = list(walk_personal_dirs(root))
     
     print('<!DOCTYPE html>\n', file=writer)
-    print('<html>\n', file=writer)
+    print('<html>', file=writer)
+    print('<head>', file=writer)
     print('  <meta charset="{0:s}">'.format(html_output_encoding), file=writer)
     print('  <style type="text/css">', file=writer)
     print('''
@@ -97,7 +98,7 @@ div.submissionText {
     print('  </style>', file=writer)
 # 一覧表表示の JavaScript 
     print('''
-<script language="JavaScript">
+<script type="text/javascript">
 function makeScoreWindow() {
 var page= window.open();
 page.document.open();
@@ -117,19 +118,21 @@ page.document.write("<tr><th>ID</th><th>氏名</th><th>得点</th></tr>");
         print('page.document.write("</tr>")',file=writer)
 
     print('''
-page.document.write("<\/body><\/html>");
+page.document.write("</body></html>");
 page.document.close();
 }
 
-</script>
+</script>''', file=writer)
+    print('</head>', file=writer)
+    print('<body>', file=writer)
+    print('''
 <form>
 記入した点数で別 window に一覧表を作る
 <input type="button" value="採点表" onClick="makeScoreWindow()">
 </form>
 ''', file=writer)
 
-
-    print('<body><form name="form2">', file=writer)
+    print('<form name="form2">', file=writer)
 
     for p in personal_dirs:
         # フォルダ名を表示
