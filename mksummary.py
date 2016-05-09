@@ -8,22 +8,23 @@ import sys
 import argparse
 
 
-def foreachpersonaldir(d):
+def foreachpersonaldir(d, root=pathlib.Path('.')):
     """個人フォルダの中をパースし, 必要な情報を取り出す
 
     Args:
         d (pathlib.Path): folder name to parse
+        root (pathlib.Path): root directory
 
     Returns:
         dictionary of folder contents,
-        {'dirname': str()   # name of folder
+        {'dirname': str()   # name of folder, relative to root
          'timestamp': None, # content of timestamp.txt
          'submissionText': None,      # content of (dirname)_submissionText.html
-         'attachments': []  # attached files; list of pathlib.Path()
+         'attachments': []  # attached files; list of pathlib.Path() relative to root
          }
     """
 
-    obj = {'dirname': str(d),
+    obj = {'dirname': str(d.relative_to(root)),
            'timestamp': None,
            'submissionText': None,
            'attachments': []}
@@ -48,7 +49,7 @@ def foreachpersonaldir(d):
         # show submitted files
         attachment_dir = d / '提出物の添付'
         for f in attachment_dir.glob('*'):
-            obj['attachments'].append(f)
+            obj['attachments'].append(f.relative_to(root))
 
     return obj
 
@@ -67,7 +68,7 @@ def walk_personal_dirs(root=pathlib.Path('.')):
         mobj = reobj.match(d.name)
         if mobj:
             # フォルダの中をパースする.
-            yield foreachpersonaldir(d)
+            yield foreachpersonaldir(d, root)
 
 def main(output_buffer, root=pathlib.Path('.'), html_output_encoding='utf-8'):
     """
@@ -181,12 +182,14 @@ page.document.close();
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('output', nargs='?', type=str, default='summary.html',
-            help='default output filename (default: %(default))')
+    parser.add_argument('--output', type=str, default='summary.html',
+            help='default output filename (default: %(default)s). file is output as "ROOT/OUTPUT"')
     parser.add_argument('--root', type=str, default='.',
-            help='root directory (default: %(default))')
+            help='root directory (default: %(default)s)')
 
     args = parser.parse_args()
 
-    with open(args.output, 'wb') as output_buffer:
+    outputpath = pathlib.Path(args.root) / args.output
+
+    with outputpath.open('wb') as output_buffer:
         main(output_buffer, root=pathlib.Path(args.root))
