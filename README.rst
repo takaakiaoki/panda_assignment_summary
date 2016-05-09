@@ -23,6 +23,11 @@ windowsの場合, mksummary.exe (https://github.com/takaakiaoki/panda_assignment
 この実行ファイルをPandAの提出物個人フォルダと同じレベルに配置します.
 mksummary.exe を実行すると summary.html が作製されます.
 
+summary.html をブラウザで開くと提出物の内容が閲覧できます.
+また, 個人毎の項目に設けられた「点数」のフォームに点数を記入することができます.
+ページトップの「採点表」ボタンを押すと, 一覧表が別ウインドウで作成されます.
+これを grades.csv (または grades.xlsx) にコピー&ペーストし, PandAにアップロードすることができます(できるようになるはず).
+
 PandA(Sakai)の提出物は次のような構成をとります.
 
 ::

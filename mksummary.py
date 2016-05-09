@@ -78,6 +78,9 @@ def main(output_buffer, root=pathlib.Path('.'), html_output_encoding='utf-8'):
     """
 
     writer = io.TextIOWrapper(output_buffer, encoding=html_output_encoding, newline='\n')
+
+    # フォルダを巡回し, コンテンツのリストを作る.
+    personal_dirs = list(walk_personal_dirs(root))
     
     print('<!DOCTYPE html>\n', file=writer)
     print('<html>\n', file=writer)
@@ -87,23 +90,65 @@ def main(output_buffer, root=pathlib.Path('.'), html_output_encoding='utf-8'):
 div.submissionText {
 	background: #f0f0f0;
 	border: medium solid #0f0f0f;
-	font-size: smaller;
+	font-size: medium;
         margin: 0 auto;
         width: 90%;
 }''', file=writer)
     print('  </style>', file=writer)
-    print('<body>', file=writer)
+# 一覧表表示の JavaScript 
+    print('''
+<script language="JavaScript">
+function makeScoreWindow() {
+var page= window.open();
+page.document.open();
+page.document.write("<html><body><table border>");
+page.document.write("<tr><th>ID</th><th>氏名</th><th>得点</th></tr>");
+''', file=writer)
+#
+# 履修者の個々の表，form の値を参照してつくる
+#
+    for p in personal_dirs:
+        # フォルダ名を表示
+        stu = (p['dirname'].split(','))[0]
+        id = (p['dirname'].split(','))[1]
+        id = id.replace("(","")
+        id = id.replace(")","")
+        print('page.document.write("<tr><td>{0:s}</td>")'.format(id), file=writer)
+        print('page.document.write("<td>{0:s}</td>")'.format(stu), file=writer)
+        print('page.document.write("<td>",document.form2.s{0:s}.value,"</td>")'.format(id),file=writer)
+        print('page.document.write("</tr>")',file=writer)
 
-    for p in walk_personal_dirs(root):
+    print('''
+page.document.write("<\/body><\/html>");
+page.document.close();
+}
+
+</script>
+<form>
+記入した点数で別 window に一覧表を作る
+<input type="button" value="採点表" onClick="makeScoreWindow()">
+</form>
+''', file=writer)
+
+
+    print('<body><form name="form2">', file=writer)
+
+    for p in personal_dirs:
         # フォルダ名を表示
         print('<hr><h3>{0:s}</h3>'.format(p['dirname']), file=writer)
         
+        # 採点用フォームを表示
+        id = (p['dirname'].split(','))[1]
+        id = id.replace("(","")
+        id = id.replace(")","")
+        print(' 点数: <input type="text" value="100" name="s{0:s}"><br/>'.format(str(id)), file=writer)
+
         # タイムスタンプでコンテンツを確認
         if p['timestamp'] is None:
-            print('提出未確認<br/>', file=writer)
+            print('提出未確認<br>', file=writer)
         else:
             # タイムスタンプ
-            print('timestamp: {0:s}<br/>'.format(str(p['timestamp'])), file=writer)
+            print('timestamp: {0:s}<br>'.format(str(p['timestamp'])), file=writer)
             # HTML
             if p['submissionText']:
                 print('submissionText:<br/>', file=writer)
@@ -130,7 +175,7 @@ div.submissionText {
                         print(relurl, end='', file=writer)
                     print('</a><br/>', file=writer)
 
-    print('</body></html>', file=writer)
+    print('</from></body></html>', file=writer)
 
 
 if __name__ == '__main__':
