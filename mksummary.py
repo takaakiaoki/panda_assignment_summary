@@ -109,13 +109,11 @@ page.document.write("<tr><th>ID</th><th>氏名</th><th>得点</th></tr>");
 #
     for p in personal_dirs:
         # フォルダ名を表示
-        stu = (p['dirname'].split(','))[0]
-        id = (p['dirname'].split(','))[1]
-        id = id.replace("(","")
-        id = id.replace(")","")
-        print('page.document.write("<tr><td>{0:s}</td>")'.format(id), file=writer)
+        stu, stid = (p['dirname'].split(','))
+        stid = stid.replace('(','').replace(')','')
+        print('page.document.write("<tr><td>{0:s}</td>")'.format(stid), file=writer)
         print('page.document.write("<td>{0:s}</td>")'.format(stu), file=writer)
-        print('page.document.write("<td>",document.form2.s{0:s}.value,"</td>")'.format(id),file=writer)
+        print('page.document.write("<td>",document.form2.s{0:s}.value,"</td>")'.format(stid),file=writer)
         print('page.document.write("</tr>")',file=writer)
 
     print('''
@@ -138,10 +136,9 @@ page.document.close();
         print('<hr><h3>{0:s}</h3>'.format(p['dirname']), file=writer)
         
         # 採点用フォームを表示
-        id = (p['dirname'].split(','))[1]
-        id = id.replace("(","")
-        id = id.replace(")","")
-        print(' 点数: <input type="text" value="100" name="s{0:s}"><br/>'.format(str(id)), file=writer)
+        stu, stid = (p['dirname'].split(','))
+        stid = stid.replace('(','').replace(')','')
+        print(' 点数: <input type="text" value="100" name="s{0:s}"><br/>'.format(str(stid)), file=writer)
 
         # タイムスタンプでコンテンツを確認
         if p['timestamp'] is None:
