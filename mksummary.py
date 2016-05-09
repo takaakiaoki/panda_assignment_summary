@@ -70,11 +70,12 @@ def walk_personal_dirs(root=pathlib.Path('.')):
             # フォルダの中をパースする.
             yield foreachpersonaldir(d, root)
 
-def main(output_buffer, root=pathlib.Path('.'), html_output_encoding='utf-8'):
+def main(output_buffer, root=pathlib.Path('.'), titlename='', html_output_encoding='utf-8'):
     """
     Args:
         output_buffer (File): binary IO to output
         root: root path to walk
+        titlename: title of HTML page
         html_output_encoding: encoding for output html
     """
 
@@ -83,10 +84,12 @@ def main(output_buffer, root=pathlib.Path('.'), html_output_encoding='utf-8'):
     # フォルダを巡回し, コンテンツのリストを作る.
     personal_dirs = list(walk_personal_dirs(root))
     
+    # HTML の出力
     print('<!DOCTYPE html>\n', file=writer)
     print('<html>', file=writer)
     print('<head>', file=writer)
     print('  <meta charset="{0:s}">'.format(html_output_encoding), file=writer)
+    print('  <title>{0:s}</title>'.format(titlename), file=writer)
     print('  <style type="text/css">', file=writer)
     print('''
 div.submissionText {
@@ -103,7 +106,13 @@ div.submissionText {
 function makeScoreWindow() {
 var page= window.open();
 page.document.open();
-page.document.write("<html><body><table border>");
+page.document.write("<html>");''', file=writer)
+    print('page.document.write("<head><title>課題名: {0:s} 点数表</title></head>");'.format(titlename), file=writer)
+    print('page.document.write("<body>");', file=writer)
+    print('page.document.write("<H1>課題名: {0:s} 点数表</H1>");'''.format(titlename), file=writer)
+    print('''
+page.document.write("表はコピー＆ペーストで表計算ソフトなどに貼り付けてご利用ください．<hr>");
+page.document.write("<table border>");
 page.document.write("<tr><th>ID</th><th>氏名</th><th>得点</th></tr>");
 ''', file=writer)
 #
@@ -126,6 +135,7 @@ page.document.close();
 </script>''', file=writer)
     print('</head>', file=writer)
     print('<body>', file=writer)
+    print('<H1>{0:s}</H1>'.format(titlename), file=writer)
     print('''
 <form>
 記入した点数で別 window に一覧表を作る
@@ -195,5 +205,8 @@ if __name__ == '__main__':
 
     outputpath = rootpath / args.output
 
+    # rootpathの名前をタイトルにする
+    titlename = rootpath.absolute().name
+
     with outputpath.open('wb') as output_buffer:
-        main(output_buffer, root=rootpath)
+        main(output_buffer, root=rootpath, titlename=titlename)
