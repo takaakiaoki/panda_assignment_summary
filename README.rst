@@ -16,44 +16,66 @@ mksummary.py (mksummary.exe) は個々のフォルダを巡回し,
 を一つのhtmlファイルとして生成します.
 
 
-利用方法
-========
+利用方法(Windows)
+========================
 
-windowsの場合, mksummary.exe (https://github.com/takaakiaoki/panda_assignment_summary/releases) を入手してください.
-この実行ファイルをPandAの提出物個人フォルダと同じレベルに配置します.
-mksummary.exe を実行すると summary.html が作製されます.
+1. windowsの場合, mksummary.exe (https://github.com/takaakiaoki/panda_assignment_summary/releases) を入手してください.
+この実行ファイルをデスクトップに配置します.
 
-summary.html をブラウザで開くと提出物の内容が閲覧できます.
-また, 個人毎の項目に設けられた「点数」のフォームに点数を記入することができます.
-ページトップの「採点表」ボタンを押すと, 一覧表が別ウインドウで作成されます.
-これを grades.csv (または grades.xlsx) にコピー&ペーストし, PandAにアップロードすることができます(できるようになるはず).
+2. PandA(Sakai)の提出物は以下のような構成をとります. ここで 
 
-PandA(Sakai)の提出物は次のような構成をとります.
+   * 「課題名」のフォルダ
+   * 「grades.csv」等の「課題名」フォルダの中にある**ファイル**
+
+   を選び, 1. のプログラム上にドラッグ&ドロップします. 「課題名」フォルダの中に「summary.html」ファイルが作成されます.
+
+   ::
+
+      bulk_download.zip
+        - 課題名/        <-- このフォルダ または
+          - grades.csv   <-- このファイルをプログラム上にD&D
+          - 学生氏名, (学生証番号)/
+            - 学生氏名, (学生証番号)_submission_text.html
+            - timestamp.txt
+            - 提出物の添付/
+              - 添付ファイル1
+              - 添付ファイル2
+              :
+          - 学生氏名, (学生証番号)/
+          - 学生氏名, (学生証番号)/
+          - 学生氏名, (学生証番号)/
+          :
+          - summary.html <-- このファイルが生成されます.
+
+3. summary.html をブラウザで開くと提出物の内容が閲覧できます.
+   
+   また, 個人毎の項目に設けられた「点数」のフォームに点数を記入することができます. ページトップの「採点表」ボタンを押すと, 一覧表が別ウインドウで作成されます.
+   これを grades.csv (または grades.xlsx) にコピー&ペーストし, PandAにアップロードすることができます(できるようになるはず).
+
+
+その他の利用方法
+========================
+
+Mac, Unix (+windows) では, pythonを事前に準備した後, mksummary.py を配置し, これを実行します. 
 
 ::
 
-   bulk_download.zip
-     + 課題名/
-       + 学生氏名, (学生証番号)/
-         + 学生氏名, (学生証番号)_submission_text.html
-         + timestamp.txt
-         + 提出物の添付/
-           + 添付ファイル1
-           + 添付ファイル2
-           :
-       + 学生氏名, (学生証番号)/
-       + 学生氏名, (学生証番号)/
-       + 学生氏名, (学生証番号)/
-       :
-       + mksummary.exe  <-- ここに配置します
-       + summary.html <-- このファイルが生成されます.
+   「課題名」フォルダの中において
 
-Mac, Unix の場合, mksummary.exe の代わりに mksummary.py を配置し, これを実行します. 
+   > mksummary.py
+
+または, 第1引数に課題名フォルダを指定します.
+
+::
+
+   > mksummary.py 課題名
+
 
 * python のバージョンは, 3.4 または 3.5 で動作確認をしています. 
 * mksummary.py に必要な標準以外のモジュールは以下の通りです. PyPIから入手できます.
 
   - pytz  (pip install pytz)
+
 
 開発者向け情報
 ==============
@@ -77,4 +99,3 @@ http://stackoverflow.com/questions/31808180/installing-pyinstaller-via-pip-leads
 ====
 
 このツールは京都大学国際高等教育院の喜多一先生のツール・アイディアを基に再構成したものです. この場をお借りして御礼申し上げます.
-
