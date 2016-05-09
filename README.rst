@@ -20,7 +20,7 @@ mksummary.py (mksummary.exe) は個々のフォルダを巡回し,
 ========================
 
 1. windowsの場合, mksummary.exe (https://github.com/takaakiaoki/panda_assignment_summary/releases) を入手してください.
-この実行ファイルをデスクトップに配置します.
+   この実行ファイルをデスクトップに配置します.
 
 2. PandA(Sakai)の提出物は以下のような構成をとります. ここで 
 
