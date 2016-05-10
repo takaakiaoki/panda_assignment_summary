@@ -1,3 +1,6 @@
+#
+# -*- coding: utf-8 -*-
+
 import pathlib
 import pytz
 import datetime
@@ -63,12 +66,13 @@ def walk_personal_dirs(root=pathlib.Path('.')):
 
     dirs = root.glob('*,(*)')
     for d in dirs:
-        # () 内のIDを取り出す.
-        reobj = re.compile(u'.+,\((?P<id>[0-9x]+)\)')
-        mobj = reobj.match(d.name)
-        if mobj:
-            # フォルダの中をパースする.
-            yield foreachpersonaldir(d, root)
+        # '氏名, (ID)' の形式に合致したフォルダだけを採用. 
+        if d.is_dir():
+            reobj = re.compile(u'.+,\((?P<id>[0-9x]+)\)')
+            mobj = reobj.match(d.name)
+            if mobj:
+                # フォルダの中をパースする.
+                yield foreachpersonaldir(d, root)
 
 def main(output_buffer, root=pathlib.Path('.'), assignmentname='', html_output_encoding='utf-8'):
     """
@@ -107,13 +111,14 @@ function makeScoreWindow() {
 var page= window.open();
 page.document.open();
 page.document.write("<html>");''', file=writer)
-    print('page.document.write("<head><title>課題名: {0:s} 点数表</title></head>");'.format(assignmentname), file=writer)
+    print('page.document.write("<head><title>点数表(score sheet): {0:s}</title></head>");'.format(assignmentname), file=writer)
     print('page.document.write("<body>");', file=writer)
-    print('page.document.write("<H1>課題名: {0:s} 点数表</H1>");'''.format(assignmentname), file=writer)
+    print('page.document.write("<H1>点数表(score sheet): {0:s}</H1>");'''.format(assignmentname), file=writer)
     print('''
-page.document.write("表はコピー＆ペーストで表計算ソフトなどに貼り付けてご利用ください．<hr>");
+page.document.write("表はコピー&amp;ペーストで表計算ソフトなどに貼り付けてご利用ください.<br>");
+page.document.write("(Use this table on your spread sheet software with copy &amp; paste.)<hr>");
 page.document.write("<table border>");
-page.document.write("<tr><th>ID</th><th>氏名</th><th>得点</th></tr>");
+page.document.write("<tr><th>ID</th><th>氏名(Name)</th><th>点数(score)</th></tr>");
 ''', file=writer)
 #
 # 履修者の個々の表，form の値を参照してつくる
@@ -138,8 +143,9 @@ page.document.close();
     print('<H1>{0:s}</H1>'.format(assignmentname), file=writer)
     print('''
 <form>
-記入した点数で別 window に一覧表を作る
-<input type="button" value="採点表" onClick="makeScoreWindow()">
+記入した点数で別 window に点数表を作る<br>
+(Make a score sheet on another window)<br>
+<input type="button" value="点数表表示(show score sheet)" onClick="makeScoreWindow()">
 </form>
 ''', file=writer)
 
@@ -152,23 +158,23 @@ page.document.close();
         # 採点用フォームを表示
         stu, stid = (p['dirname'].split(','))
         stid = stid.replace('(','').replace(')','')
-        print(' 点数: <input type="text" value="100" name="s{0:s}"><br/>'.format(str(stid)), file=writer)
+        print(' 点数(score): <input type="text" value="100" name="s{0:s}"> (0-100)<br>'.format(str(stid)), file=writer)
 
         # タイムスタンプでコンテンツを確認
         if p['timestamp'] is None:
-            print('提出未確認<br>', file=writer)
+            print('提出未確認(materials not found)<br>', file=writer)
         else:
             # タイムスタンプ
             print('timestamp: {0:s}<br>'.format(str(p['timestamp'])), file=writer)
             # HTML
             if p['submissionText']:
-                print('submissionText:<br/>', file=writer)
+                print('submissionText:<br>', file=writer)
                 print('<div class="submissionText">', file=writer)
                 print(p['submissionText'], file=writer)
                 print('</div>', file=writer)
             # 添付ファイル
             if p['attachments']:
-                print('attachments:<br/>', file=writer)
+                print('attachments:<br>', file=writer)
                 for a in p['attachments']:
                     # リンクパスをurl形式に変換
                     relurl = urllib.parse.urlunsplit(('', '', str(a.as_posix()), '', ''))
@@ -178,13 +184,13 @@ page.document.close();
                     linkurl = relurl
                     print('<a href="{0:s}">'.format(linkurl), end='', file=writer)
                     if a.suffix.lower() in ('.png', '.jpg', '.jpeg', '.bmp'):
-                        print(relurl, '<br/>', sep='', end='', file=writer)
+                        print(relurl, '<br>', sep='', end='', file=writer)
                         # ビットマップならば埋め込み
                         print('<img src="{0:s}" width=40%>'.format(linkurl),
                               end='', file=writer)
                     else:
                         print(relurl, end='', file=writer)
-                    print('</a><br/>', file=writer)
+                    print('</a><br>', file=writer)
 
     print('</from></body></html>', file=writer)
 
