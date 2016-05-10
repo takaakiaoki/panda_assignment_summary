@@ -100,8 +100,12 @@ div.submissionText {
 	background: #f0f0f0;
 	border: medium solid #0f0f0f;
 	font-size: medium;
-        margin: 0 auto;
-        width: 90%;
+        margin: 0 0 0 10px;
+        padding: 5px 10px 5px 10px;
+}''', file=writer)
+    print('''
+div.attachment {
+    margin: 0 0 0 10px;
 }''', file=writer)
     print('  </style>', file=writer)
 # 一覧表表示の JavaScript 
@@ -178,6 +182,7 @@ page.document.close();
             # 添付ファイル
             if p['attachments']:
                 print('attachments:<br>', file=writer)
+                print('<div class="attachment">', file=writer)
                 for a in p['attachments']:
                     # リンクパスをurl形式に変換
                     relurl = urllib.parse.urlunsplit(('', '', str(a.as_posix()), '', ''))
@@ -194,6 +199,7 @@ page.document.close();
                     else:
                         print(relurl, end='', file=writer)
                     print('</a><br>', file=writer)
+                print('</div>', file=writer)
 
     print('</from></body></html>', file=writer)
 
