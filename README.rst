@@ -2,6 +2,8 @@
 panda_assignment_mksummary
 ##########################
 
+English instruction: `README-e.rst <https://github.com/takaakiaoki/panda_assignment_summary/blob/master/README-e.rst>`_
+
 PandA(Sakai) でダウンロードした課題ファイルは,
 ユーザー毎に分類されたフォルダに格納されるため,
 手早くプレビューすることが困難です.
