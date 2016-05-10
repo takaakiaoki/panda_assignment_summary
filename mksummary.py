@@ -158,12 +158,15 @@ page.document.close();
         # 採点用フォームを表示
         stu, stid = (p['dirname'].split(','))
         stid = stid.replace('(','').replace(')','')
-        print(' 点数(score): <input type="text" value="100" name="s{0:s}"> (0-100)<br>'.format(str(stid)), file=writer)
 
         # タイムスタンプでコンテンツを確認
         if p['timestamp'] is None:
+            # デフォルトの成績を0
+            print('点数(score): <input type="text" value="0" name="s{0:s}"> (0-100)<br>'.format(str(stid)), file=writer)
             print('提出未確認(materials not found)<br>', file=writer)
         else:
+            # デフォルトの成績を100
+            print('点数(score): <input type="text" value="100" name="s{0:s}"> (0-100)<br>'.format(str(stid)), file=writer)
             # タイムスタンプ
             print('timestamp: {0:s}<br>'.format(str(p['timestamp'])), file=writer)
             # HTML
