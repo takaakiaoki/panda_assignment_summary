@@ -75,8 +75,7 @@ or, path to assignment folder should be given for the 1st argument of mksummary.
 
   - pytz  (pip install pytz)
 
+License
+=======
 
-Acknowledgement
-===============
-
-The author appreciates to Prof. Hajime KITA, Kyoto University, for his inspiring prototype and kind advise.
+This software is relased under the MIT License, see LICENSE.txt.
