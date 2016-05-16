@@ -36,7 +36,7 @@ Usage (for Windows)
           - student_name, (student_id)/
             - student_name, (student_id)_submission_text.html
             - timestamp.txt
-            - attachments/
+            - Submission attachment(s)/
               - file1
               - file2
               :
