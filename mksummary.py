@@ -53,6 +53,10 @@ def foreachpersonaldir(d, root=pathlib.Path('.')):
         attachment_dir = d / '提出物の添付'
         for f in attachment_dir.glob('*'):
             obj['attachments'].append(f.relative_to(root))
+        # for English mode
+        attachment_dir = d / 'Submission attachment(s)'
+        for f in attachment_dir.glob('*'):
+            obj['attachments'].append(f.relative_to(root))
 
     return obj
 
