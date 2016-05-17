@@ -1,28 +1,33 @@
+#
+# -*- coding: utf-8 -*-
+
 import pathlib
 import pytz
 import datetime
 import urllib
 import re
 import io
+import sys
 import argparse
 
 
-def foreachpersonaldir(d):
+def foreachpersonaldir(d, root=pathlib.Path('.')):
     """個人フォルダの中をパースし, 必要な情報を取り出す
 
     Args:
         d (pathlib.Path): folder name to parse
+        root (pathlib.Path): root directory
 
     Returns:
         dictionary of folder contents,
-        {'dirname': str()   # name of folder
+        {'dirname': str()   # name of folder, relative to root
          'timestamp': None, # content of timestamp.txt
          'submissionText': None,      # content of (dirname)_submissionText.html
-         'attachments': []  # attached files; list of pathlib.Path()
+         'attachments': []  # attached files; list of pathlib.Path() relative to root
          }
     """
 
-    obj = {'dirname': str(d),
+    obj = {'dirname': str(d.relative_to(root)),
            'timestamp': None,
            'submissionText': None,
            'attachments': []}
@@ -34,7 +39,7 @@ def foreachpersonaldir(d):
         # loaded timestamp is in utc, translate to jst
         # see http://nekoya.github.io/blog/2013/06/21/python-datetime/
         tstamp = pytz.utc.localize(tstamp)  # attatch tzinfo as utc
-        tstamp = tstamp.astimezone(pytz.timezone('Asia/Tokyo'))  # apply JST
+        tstamp = tstamp.astimezone(pytz.timezone('Asia/Tokyo')) # apply JST
         obj['timestamp'] = tstamp
 
         # html テキスト d.name + '_submissionText.html'
@@ -43,10 +48,15 @@ def foreachpersonaldir(d):
             # BOM付きutf8
             obj['submissionText'] = spath.open('r', encoding='utf-8-sig').read()
 
+
         # show submitted files
         attachment_dir = d / '提出物の添付'
         for f in attachment_dir.glob('*'):
-            obj['attachments'].append(f)
+            obj['attachments'].append(f.relative_to(root))
+        # for English mode
+        attachment_dir = d / 'Submission attachment(s)'
+        for f in attachment_dir.glob('*'):
+            obj['attachments'].append(f.relative_to(root))
 
     return obj
 
@@ -88,10 +98,11 @@ def walk_personal_dirs_idlist(idlist, root=pathlib.Path('.')):
                    'group': int(sps[3]),
                    'n_in_group': int(sps[4]),
                    'personaldir': None}
+            # フォルダは root からの相対値
             dirpath = root / (sps[1] + ' ' + sps[2] + ',(' + sps[0] + ')')
 
             if dirpath.is_dir():
-                obj['personaldir'] = foreachpersonaldir(dirpath)
+                obj['personaldir'] = foreachpersonaldir(dirpath, root)
 
             yield obj
 
@@ -118,6 +129,7 @@ def render_personalfolder(p, writer, enable_viewerjs=False):
         # 添付ファイル
         if p['attachments']:
             print('attachments:<br/>', file=writer)
+            print('<div class="attachment">', file=writer)
             for a in p['attachments']:
                 # リンクパスをurl形式に変換
                 relurl = urllib.parse.urlunsplit(('', '', str(a.as_posix()), '', ''))
@@ -140,47 +152,62 @@ def render_personalfolder(p, writer, enable_viewerjs=False):
                           end='', file=writer)
                 else:
                     print('{0:s}</a><br/>'.format(linkurl), file=writer)
+            print('</div>', file=writer)
 
 
 def main(output_buffer, root=pathlib.Path('.'),
+         assignmentname='',
          html_output_encoding='utf-8',
          enable_viewerjs='False'):
     """
+    root フォルダを巡回し, summary.html 等を出力する.
+
     Args:
         output_buffer (File): binary IO to output
         root (pathlib.Path): root path to walk
+        assignmentname (str): title of HTML page
         html_output_encoding (str): encoding for output html
         enable_viwerjs (bool): ViewerJS でのプレビューに対応する.
     """
 
-    idlist = pathlib.Path('ID-group-map.txt')
+    idlist = root / 'ID-group-map.txt'
 
     writer = io.TextIOWrapper(output_buffer, encoding=html_output_encoding, newline='\n')
 
+    # フォルダを巡回し, コンテンツのリストを作る.
+    personal_dirs = list(walk_personal_dirs_idlist(idlist, root))
+
+    # HTML の出力
     print('<!DOCTYPE html>', file=writer)
     print('<html>', file=writer)
     print('<head>', file=writer)
-    print('\t<meta charset="{0:s}">'.format(html_output_encoding), file=writer)
-    print('\t<style type="text/css">', file=writer)
-    print('''div.submissionText {
-	background: #f0f0f0;
-	border: medium solid #0f0f0f;
-	font-size: smaller;
-	margin: 0 auto;
-	width: 90%;
-}
+    print('  <meta charset="{0:s}">'.format(html_output_encoding), file=writer)
+    print('  <title>{0:s}</title>'.format(assignmentname), file=writer)
+    print('  <style type="text/css">', file=writer)
+    print('''
+div.submissionText {
+  background: #f0f0f0;
+  border: medium solid #0f0f0f;
+  font-size: medium;
+  margin: 0 0 0 10px;
+  padding: 5px 10px 5px 10px;
+}''', file=writer)
+    print('''
 img.attachedimg {
-    width: 510px;
+  width: 510px;
 }
 iframe.attacheddoc {
-    width: 510px;
-    height: 720px;
+  width: 510px;
+  height: 720px;
 }
-''', file=writer)
-    print('\t</style>', file=writer)
+div.attachment {
+  margin: 0 0 0 10px;
+}''', file=writer)
+    print('  </style>', file=writer)
     print('</head>', file=writer)
     print('<body>', file=writer)
 
+    print('<H1>{0:s}</H1>'.format(assignmentname), file=writer)
     # 各班へのリンク
     groups = [list(range(1, 7)),
               list(range(7, 7*2)),
@@ -197,7 +224,7 @@ iframe.attacheddoc {
     print('</nav>', file=writer)
 
     group = 0
-    for p in walk_personal_dirs_idlist(idlist, root):
+    for p in personal_dirs:
         # 新しい班?
         if p['group'] != group:
             group = p['group']
@@ -220,16 +247,25 @@ iframe.attacheddoc {
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('output', nargs='?', type=str, default='summary.html',
-                        help='default output filename (default: %(default)s)')
-    parser.add_argument('--root', type=str, default='.',
-                        help='root directory (default: %(default)s)')
+    parser.add_argument('root', nargs='?', type=str, default='.',
+            help='root directory or file path under root (default: %(default)s). If file path is given, directory part is used as ROOT')
+    parser.add_argument('--output', type=str, default='summary.html',
+            help='default output filename (default: %(default)s). file is output as "ROOT/OUTPUT"')
     parser.add_argument('--viewerjs', default=False,
                         action='store_true',
                         help='enable ViewerJS PDF viewer')
 
     args = parser.parse_args()
 
-    with open(args.output, 'wb') as output_buffer:
-        main(output_buffer, root=pathlib.Path(args.root),
+    rootpath = pathlib.Path(args.root)
+    if rootpath.is_file():
+        rootpath = rootpath.parent
+
+    outputpath = rootpath / args.output
+
+    # rootpathの名前をタイトルにする
+    assignmentname = rootpath.absolute().name
+
+    with outputpath.open('wb') as output_buffer:
+        main(output_buffer, root=rootpath, assignmentname=assignmentname,
              enable_viewerjs=args.viewerjs)
