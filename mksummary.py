@@ -39,7 +39,7 @@ def foreachpersonaldir(d, root=pathlib.Path('.')):
         # loaded timestamp is in utc, translate to jst
         # see http://nekoya.github.io/blog/2013/06/21/python-datetime/
         tstamp = pytz.utc.localize(tstamp)  # attatch tzinfo as utc
-        tstamp = tstamp.astimezone(pytz.timezone('Asia/Tokyo')) # apply JST
+        tstamp = tstamp.astimezone(pytz.timezone('Asia/Tokyo'))  # apply JST
         obj['timestamp'] = tstamp
 
         # html テキスト d.name + '_submissionText.html'
@@ -47,7 +47,6 @@ def foreachpersonaldir(d, root=pathlib.Path('.')):
         if spath.exists():
             # BOM付きutf8
             obj['submissionText'] = spath.open('r', encoding='utf-8-sig').read()
-
 
         # show submitted files
         attachment_dir = d / '提出物の添付'
@@ -107,17 +106,46 @@ def walk_personal_dirs_idlist(idlist, root=pathlib.Path('.')):
             yield obj
 
 
-def render_personalfolder(p, writer, enable_viewerjs=False):
+def render_personalfolder(p,
+                          writer,
+                          enable_viewerjs=False,
+                          scorefield=None):
     """ foreachpersonaldir の内容を html で出力する.
     Args:
         p (dict): foreachpersonaldir の結果
         writer (File): htmlの出力対象
-        enable_viwerjs (bool): ViewerJS でのプレビューに対応する.
+        enable_viwerjs (optional[bool]): ViewerJS でのプレビューに対応する.
+        scorefield (optional[dict]): 得点フォームの情報, Noneの場合不要
+            score (int): 現在の点数, None だとデフォルト値を採用
+            fullscore (int): 満点
+            formname (str): このフォームの name 属性
     """
+    def formatscoreform(s, defaulscore):
+        '''点数フォームをフォーマットする
+
+        Args:
+            s (dict): 得点フォームの情報
+                score (int): 現在の点数, None だとデフォルト値を採用
+                fullscore (int): 満点
+                formname (str): このフォームの name 属性
+            defaultscore (int): s['score'] == None の場合に設定する値
+        '''
+
+        f = '点数(score): <input type="text" value="{0:d}" name="{2:s}"> (0-{1:d})<br>'
+        return f.format(s['score'] if s['score'] is not None else 0,
+                        s['fullscore'],
+                        s['formname'])
+
     # タイムスタンプでコンテンツを確認
     if p['timestamp'] is None:
-        print('提出未確認<br/>', file=writer)
+        # 点数フィールド (デフォルトは 減点法なので20)
+        if scorefield:
+            print(formatscoreform(scorefield, 20), file=writer)
+        print('提出未確認(materials not found)<br>', file=writer)
     else:
+        # 点数フィールド (デフォルトは減点法なので20)
+        if scorefield:
+            print(formatscoreform(scorefield, 0), file=writer)
         # タイムスタンプ
         print('timestamp: {0:s}<br/>'.format(str(p['timestamp'])), file=writer)
         # HTML
@@ -148,14 +176,16 @@ def render_personalfolder(p, writer, enable_viewerjs=False):
                 elif enable_viewerjs and (suffix in ('.pdf', '.odf')):
                     #  ViewerJS によるプレビュー画面埋め込み
                     print(relurl, '</a><br/>', file=writer)
-                    print('<iframe class="attacheddoc" src="_summary/ViewerJS/#../../{0:s}" allowfullscreen webkitallowfullscreen></iframe>'.format(linkurl),
+                    print('<iframe class="attacheddoc" src="_summary/ViewerJS/#../../{0:s}"'
+                          'allowfullscreen webkitallowfullscreen></iframe>'.format(linkurl),
                           end='', file=writer)
                 else:
                     print('{0:s}</a><br/>'.format(linkurl), file=writer)
             print('</div>', file=writer)
 
 
-def main(output_buffer, root=pathlib.Path('.'),
+def main(output_buffer,
+         root=pathlib.Path('.'),
          assignmentname='',
          html_output_encoding='utf-8',
          enable_viewerjs='False'):
@@ -239,7 +269,14 @@ div.attachment {
         if c is None:
             print('フォルダが確認できません<br/>', file=writer)
         else:
-            render_personalfolder(c, writer, enable_viewerjs)
+            # 採点用フォームデータ
+            scorefield = {
+                'formname': 's' + p['id'],
+                'score': None,
+                'fullscore': 20}
+            render_personalfolder(c, writer,
+                                  enable_viewerjs=enable_viewerjs,
+                                  scorefield=scorefield)
 
     print('</body></html>', file=writer)
 
@@ -248,9 +285,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument('root', nargs='?', type=str, default='.',
-            help='root directory or file path under root (default: %(default)s). If file path is given, directory part is used as ROOT')
+                        help='root directory or file path under root (default: %(default)s).'
+                             'If file path is given, directory part is used as ROOT')
     parser.add_argument('--output', type=str, default='summary.html',
-            help='default output filename (default: %(default)s). file is output as "ROOT/OUTPUT"')
+                        help='default output filename (default: %(default)s).'
+                             'file is output as "ROOT/OUTPUT"')
     parser.add_argument('--viewerjs', default=False,
                         action='store_true',
                         help='enable ViewerJS PDF viewer')
