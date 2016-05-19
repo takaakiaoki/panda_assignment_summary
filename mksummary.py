@@ -234,10 +234,56 @@ div.attachment {
   margin: 0 0 0 10px;
 }''', file=writer)
     print('  </style>', file=writer)
+
+# 一覧表表示の JavaScript 
+    print('''
+<script type="text/javascript">
+function makeScoreWindow() {
+var page= window.open();
+page.document.open();
+page.document.write("<html>");''', file=writer)
+    print('page.document.write("<head><title>点数表(score sheet): {0:s}</title></head>");'.format(assignmentname), file=writer)
+    print('page.document.write("<body>");', file=writer)
+    print('page.document.write("<H1>点数表(score sheet): {0:s}</H1>");'''.format(assignmentname), file=writer)
+    print('''
+page.document.write("表はコピー&amp;ペーストで表計算ソフトなどに貼り付けてご利用ください.<br>");
+page.document.write("(Use this table on your spread sheet software with copy &amp; paste.)<hr>");
+page.document.write("<table border>");
+page.document.write("<tr><th>ID</th><th>氏名(Name)</th><th>点数(score)</th></tr>");
+''', file=writer)
+#
+# 履修者の個々の表，form の値を参照してつくる
+#
+    for p in personal_dirs:
+        # personaldir が有効なもののみ
+        if p['personaldir']:
+            # フォルダ名を表示
+            stu, stid = (p['personaldir']['dirname'].split(','))
+            stid = stid.replace('(', '').replace(')', '')
+            print('page.document.write("<tr><td>{0:s}</td>")'.format(stid), file=writer)
+            print('page.document.write("<td>{0:s}</td>")'.format(stu), file=writer)
+            print('page.document.write("<td>",document.form2.s{0:s}.value,"</td>")'.format(stid), file=writer)
+            print('page.document.write("</tr>")', file=writer)
+
+    print('''
+page.document.write("</table></body></html>");
+page.document.close();
+}
+
+</script>''', file=writer)
+
     print('</head>', file=writer)
     print('<body>', file=writer)
 
     print('<H1>{0:s}</H1>'.format(assignmentname), file=writer)
+    # 特典表の表示ボタン
+    print('''
+<form>
+記入した点数で別 window に点数表を作る<br>
+(Make a score sheet on another window)<br>
+<input type="button" value="点数表表示(show score sheet)" onClick="makeScoreWindow()">
+</form>
+''', file=writer)
     # 各班へのリンク
     groups = [list(range(1, 7)),
               list(range(7, 7*2)),
@@ -254,6 +300,9 @@ div.attachment {
     print('</nav>', file=writer)
 
     group = 0
+
+    print('<form name="form2">', file=writer)
+
     for p in personal_dirs:
         # 新しい班?
         if p['group'] != group:
@@ -278,7 +327,7 @@ div.attachment {
                                   enable_viewerjs=enable_viewerjs,
                                   scorefield=scorefield)
 
-    print('</body></html>', file=writer)
+    print('</form></body></html>', file=writer)
 
 
 if __name__ == '__main__':
