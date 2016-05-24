@@ -118,7 +118,7 @@ def render_personalfolder(p,
                           scorefield=None):
     """ foreachpersonaldir の内容を html で出力する.
     Args:
-        p (dict): foreachpersonaldir の結果
+        p (dict): foreachpersonaldir の結果. None の場合, 'フォルダが確認できません' を出力
         writer (File): htmlの出力対象
         enable_viwerjs (optional[bool]): ViewerJS でのプレビューに対応する.
         scorefield (optional[dict]): 得点フォームの情報, Noneの場合不要
@@ -142,52 +142,102 @@ def render_personalfolder(p,
                         s['fullscore'],
                         s['formname'])
 
+
+    if p is None:
+        # 点数フィールド (デフォルトは 減点法なので20)
+        if scorefield:
+            print(formatscoreform(scorefield, 20), file=writer)
+        return
+        print('フォルダがありません(personal folder is not found)<br>', file=writer)
+
     # タイムスタンプでコンテンツを確認
     if p['timestamp'] is None:
         # 点数フィールド (デフォルトは 減点法なので20)
         if scorefield:
             print(formatscoreform(scorefield, 20), file=writer)
+        return
         print('提出未確認(materials not found)<br>', file=writer)
-    else:
-        # 点数フィールド (デフォルトは減点法なので20)
-        if scorefield:
-            print(formatscoreform(scorefield, 0), file=writer)
-        # タイムスタンプ
-        print('timestamp: {0:s}<br/>'.format(str(p['timestamp'])), file=writer)
-        # HTML
-        if p['submissionText']:
-            print('submissionText:<br/>', file=writer)
-            print('<div class="submissionText">', file=writer)
-            print(p['submissionText'], file=writer)
-            print('</div>', file=writer)
-        # 添付ファイル
-        if p['attachments']:
-            print('attachments:<br/>', file=writer)
-            print('<div class="attachment">', file=writer)
-            for a in p['attachments']:
-                # リンクパスをurl形式に変換
-                relurl = urllib.parse.urlunsplit(('', '', str(a.as_posix()), '', ''))
-                # in sake for working on IE11 and Edge (and other browsers)
-                # do not escape multibyte URL
-                # linkurl = urllib.parse.quote(relurl)
-                linkurl = relurl
-                print('<a href="{0:s}">'.format(linkurl), end='', file=writer)
-                suffix = a.suffix.lower()
-                if suffix in ('.png', '.jpg', '.jpeg', '.bmp'):
-                    print(relurl, '<br/>', sep='', end='', file=writer)
-                    # ビットマップならば埋め込み
-                    print('<img class="attachedimg" src="{0:s}">'.format(linkurl),
-                          end='', file=writer)
-                    print('</a><br/>', file=writer)
-                elif enable_viewerjs and (suffix in ('.pdf', '.odf')):
-                    #  ViewerJS によるプレビュー画面埋め込み
-                    print(relurl, '</a><br/>', file=writer)
-                    print('<iframe class="attacheddoc" src="_summary/ViewerJS/#../../{0:s}"'
-                          'allowfullscreen webkitallowfullscreen></iframe>'.format(linkurl),
-                          end='', file=writer)
-                else:
-                    print('{0:s}</a><br/>'.format(linkurl), file=writer)
-            print('</div>', file=writer)
+
+    # 有効なコンテンツ
+    # 点数フィールド (デフォルトは減点法なので20)
+    if scorefield:
+        print(formatscoreform(scorefield, 0), file=writer)
+    # タイムスタンプ
+    print('timestamp: {0:s}<br/>'.format(str(p['timestamp'])), file=writer)
+    # HTML
+    if p['submissionText']:
+        print('submissionText:<br/>', file=writer)
+        print('<div class="submissionText">', file=writer)
+        print(p['submissionText'], file=writer)
+        print('</div>', file=writer)
+    # 添付ファイル
+    if p['attachments']:
+        print('attachments:<br/>', file=writer)
+        print('<div class="attachment">', file=writer)
+        for a in p['attachments']:
+            # リンクパスをurl形式に変換
+            relurl = urllib.parse.urlunsplit(('', '', str(a.as_posix()), '', ''))
+            # in sake for working on IE11 and Edge (and other browsers)
+            # do not escape multibyte URL
+            # linkurl = urllib.parse.quote(relurl)
+            linkurl = relurl
+            print('<a href="{0:s}">'.format(linkurl), end='', file=writer)
+            suffix = a.suffix.lower()
+            if suffix in ('.png', '.jpg', '.jpeg', '.bmp'):
+                print(relurl, '<br/>', sep='', end='', file=writer)
+                # ビットマップならば埋め込み
+                print('<img class="attachedimg" src="{0:s}">'.format(linkurl),
+                      end='', file=writer)
+                print('</a><br/>', file=writer)
+            elif enable_viewerjs and (suffix in ('.pdf', '.odf')):
+                #  ViewerJS によるプレビュー画面埋め込み
+                print(relurl, '</a><br/>', file=writer)
+                print('<iframe class="attacheddoc" src="_summary/ViewerJS/#../../{0:s}"'
+                      'allowfullscreen webkitallowfullscreen></iframe>'.format(linkurl),
+                      end='', file=writer)
+            else:
+                print('{0:s}</a><br/>'.format(linkurl), file=writer)
+        print('</div>', file=writer)
+
+
+def scoresheetscript(personal_dirs, writer):
+    """得点表を生成するjavascriptを作成する
+
+    Args:
+        personal_dirs (list): walk_personal_dirs_idlist が返すオブジェクトのリスト
+        writer (stream): 出力するファイル
+    """
+
+    print('''
+<script type="text/javascript">
+function makeScoreWindow() {
+var page= window.open();
+page.document.open();
+page.document.write("<html>");''', file=writer)
+    print('page.document.write("<head><title>点数表(score sheet): {0:s}</title></head>");'.format(assignmentname), file=writer)
+    print('page.document.write("<body>");', file=writer)
+    print('page.document.write("<H1>点数表(score sheet): {0:s}</H1>");'''.format(assignmentname), file=writer)
+    print('''
+page.document.write("表はコピー&amp;ペーストで表計算ソフトなどに貼り付けてご利用ください.<br>");
+page.document.write("(Use this table on your spread sheet software with copy &amp; paste.)<hr>");
+page.document.write("<table border>");
+page.document.write("<tr><th>班</th><th>ID</th><th>氏名(Name)</th><th>点数(score)</th></tr>");
+''', file=writer)
+
+    #
+    # 履修者の個々の表，form の値を参照してつくる
+    #
+    for p in personal_dirs:
+        print('page.document.write("<tr><td>{0:d}</td>")'.format(p['group']), file=writer)
+        print('page.document.write("<td>{0:s}</td>")'.format(p['id']), file=writer)
+        print('page.document.write("<td>{0:s} {1:s}</td>")'.format(p['surname'], p['givenname']), file=writer)
+        print('page.document.write("<td>",document.form2.{0:s}.value,"</td></tr>")'.format('s'+p['id']),file=writer)
+
+    print('''
+page.document.write("</body></html>");
+page.document.close();
+}
+</script>''', file=writer)
 
 
 def main(output_buffer,
@@ -240,10 +290,23 @@ div.attachment {
   margin: 0 0 0 10px;
 }''', file=writer)
     print('  </style>', file=writer)
+    # 得点表生成
+    scoresheetscript(personal_dirs, writer)
     print('</head>', file=writer)
     print('<body>', file=writer)
 
     print('<H1>{0:s}</H1>'.format(assignmentname), file=writer)
+
+    print('''
+<form>
+記入した点数で別 window に点数表を作る<br>
+(Make a score sheet on another window)<br>
+<input type="button" value="点数表表示(show score sheet)" onClick="makeScoreWindow()">
+</form>
+''', file=writer)
+
+    print('<hr>', file=writer)
+
     # 各班へのリンク
     groups = [list(range(1, 7)),
               list(range(7, 7*2)),
@@ -259,6 +322,7 @@ div.attachment {
         print('<br/>', file=writer)
     print('</nav>', file=writer)
 
+    print('<form name="form2">', file=writer)
     group = 0
     for p in personal_dirs:
         # 新しい班?
@@ -270,21 +334,16 @@ div.attachment {
         # 氏名を表示
         print('<hr><h3>{0:s} {1:s}</h3>'.format(p['surname'], p['givenname']), file=writer)
 
-        # コンテンツを確認
-        c = p['personaldir']
-        if c is None:
-            print('フォルダが確認できません<br/>', file=writer)
-        else:
-            # 採点用フォームデータ
-            scorefield = {
-                'formname': 's' + p['id'],
-                'score': None,
-                'fullscore': 20}
-            render_personalfolder(c, writer,
-                                  enable_viewerjs=enable_viewerjs,
-                                  scorefield=scorefield)
+        # 採点用フォームデータ
+        scorefield = {
+            'formname': 's' + p['id'],
+            'score': None,
+            'fullscore': 20}
+        render_personalfolder(p['personaldir'], writer,
+                              enable_viewerjs=enable_viewerjs,
+                              scorefield=scorefield)
 
-    print('</body></html>', file=writer)
+    print('</form></body></html>', file=writer)
 
 
 if __name__ == '__main__':
