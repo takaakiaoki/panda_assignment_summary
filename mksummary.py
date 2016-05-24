@@ -97,11 +97,17 @@ def walk_personal_dirs_idlist(idlist, root=pathlib.Path('.')):
                    'group': int(sps[3]),
                    'n_in_group': int(sps[4]),
                    'personaldir': None}
-            # フォルダは root からの相対値
-            dirpath = root / (sps[1] + ' ' + sps[2] + ',(' + sps[0] + ')')
 
+            # フォルダは root からの相対値
+            # 5/21 以降のフォーマット
+            dirpath = root / (sps[1] + ' ' + sps[2] + ' (' + sps[0] + ')')
             if dirpath.is_dir():
                 obj['personaldir'] = foreachpersonaldir(dirpath, root)
+            else:
+                # 5/21 以前のフォーマット
+                dirpath = root / (sps[1] + ' ' + sps[2] + ',(' + sps[0] + ')')
+                if dirpath.is_dir():
+                    obj['personaldir'] = foreachpersonaldir(dirpath, root)
 
             yield obj
 
