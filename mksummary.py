@@ -104,7 +104,8 @@ def walk_personal_dirs(root=pathlib.Path('.')):
 def render_personalfolder(p,
                           writer,
                           enable_viewerjs=False,
-                          scorefield=None):
+                          scorefield=None,
+                          commentfield=None):
     """ foreachpersonaldir の内容を html で出力する.
     Args:
         p (dict): foreachpersonaldir の結果. None の場合, 'フォルダが確認できません' を出力
@@ -114,6 +115,9 @@ def render_personalfolder(p,
             score (int): 現在の点数, None だとデフォルト値を採用
             fullscore (int): 満点
             formname (str): このフォームの name 属性
+        commentfield (optional[dict]): コメントフォームの情報, Noneの場合不要
+            formname (str): このフォームの name 属性
+            [data (str)]: テキストデータ
     """
     def formatscoreform(s, defaulscore):
         '''点数フォームをフォーマットする
@@ -131,24 +135,52 @@ def render_personalfolder(p,
                         s['fullscore'],
                         s['formname'])
 
-    if p is None:
+    def formatcommentform(c):
+        '''コメントフォームをフォーマットする
+
+        Args:
+            c (dict): コメントフォームの情報
+                formname (str): このフォームの name 属性
+                [data (str)]: テキストデータ
+        '''
+        return '<textarea name="{0:s}" rows="3" cols="40">{1:s}</textarea><br>'.format(commentfield['formname'], commentfield.get('data', ''))
+
+    def printforms(writer, scorefield=None, defaultscore=0, commentfield=None):
+        '''点数フォーム, コメントフォームをフォーマット,  出力する
+
+        Args:
+            writer (File): htmlの出力対象
+            scorefield (optional[dict]): 得点フォームの情報, Noneの場合不要
+                score (int): 現在の点数, None だとデフォルト値を採用
+                fullscore (int): 満点
+                formname (str): このフォームの name 属性
+            defaultscore: scorefield['score'] == None の場合に適用する点数
+            commentfield (optional[dict]): コメントフォームの情報, Noneの場合不要
+                formname (str): このフォームの name 属性
+                [data (str)]: テキストデータ
+        '''
         if scorefield:
-            print(formatscoreform(scorefield, 0), file=writer)
+            print(formatscoreform(scorefield, defaultscore), file=writer)
+        if commentfield:
+            print('コメント(comment):<br>', file=writer)
+            print(formatcommentform(commentfield), file=writer)
+
+    if p is None:
+        # デフォルトの成績を0
+        printforms(writer, scorefield, 0, commentfield)
         print('フォルダがありません(personal folder is not found)<br>', file=writer)
         return
 
     # タイムスタンプでコンテンツを確認
     if p['timestamp'] is None:
         # デフォルトの成績を0
-        if scorefield:
-            print(formatscoreform(scorefield, 0), file=writer)
+        printforms(writer, scorefield, 0, commentfield)
         print('提出未確認(materials not found)<br>', file=writer)
         return
 
     # 有効なコンテンツ
     # デフォルトの成績を100
-    if scorefield:
-        print(formatscoreform(scorefield, 100), file=writer)
+    printforms(writer, scorefield, 100, commentfield)
     # タイムスタンプ
     print('timestamp: {0:s}<br>'.format(str(p['timestamp'])), file=writer)
     # HTML
@@ -208,7 +240,7 @@ page.document.write("<html>");''', file=writer)
 page.document.write("表はコピー&amp;ペーストで表計算ソフトなどに貼り付けてご利用ください.<br>");
 page.document.write("(Use this table on your spread sheet software with copy &amp; paste.)<hr>");
 page.document.write("<table border>");
-page.document.write("<tr><th>ID</th><th>氏名(Name)</th><th>点数(score)</th></tr>");
+page.document.write("<tr><th>ID</th><th>氏名(Name)</th><th>点数(score)</th><th>コメント(comment)</th></tr>");
 ''', file=writer)
 
     #
@@ -218,7 +250,8 @@ page.document.write("<tr><th>ID</th><th>氏名(Name)</th><th>点数(score)</th><
         # フォルダ名を表示
         print('page.document.write("<tr><td>{0:s}</td>")'.format(p['id']), file=writer)
         print('page.document.write("<td>{0:s}</td>")'.format(p['name']), file=writer)
-        print('page.document.write("<td>",document.form2.{0:s}.value,"</td></tr>")'.format('s'+p['id']),file=writer)
+        print('page.document.write("<td>",document.form2.{0:s}.value,"</td>")'.format('s'+p['id']),file=writer)
+        print('page.document.write("<td>",document.form2.{0:s}.value,"</td></tr>")'.format('c'+p['id']),file=writer)
 
     print('''
 page.document.write("</body></html>");
@@ -301,9 +334,12 @@ div.attachment {
             'formname': 's' + p['id'],
             'score': None,
             'fullscore': 100}
+        commentfield = {
+            'formname': 'c' + p['id']}
         render_personalfolder(p['personaldir'], writer,
                               enable_viewerjs=enable_viewerjs,
-                              scorefield=scorefield)
+                              scorefield=scorefield,
+                              commentfield=commentfield)
 
     print('</form></body></html>', file=writer)
 
