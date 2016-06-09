@@ -115,9 +115,9 @@ ViewrJS (http://viewerjs.org/) を用いることで PDF, ODF ファイルのプ
               - 添付ファイル1
               - 添付ファイル2
               :
-          - 学生氏名, (学生証番号)/
-          - 学生氏名, (学生証番号)/
-          - 学生氏名, (学生証番号)/
+          - 学生氏名 (学生証番号)/
+          - 学生氏名 (学生証番号)/
+          - 学生氏名 (学生証番号)/
           :
           - summary.html 
           - _summary/ <-- このフォルダを作成します
@@ -129,11 +129,11 @@ ViewrJS (http://viewerjs.org/) を用いることで PDF, ODF ファイルのプ
 
 3. mksummary.exe または mksummary.py を :option:`viewerjs` オプション付きで実行します. コマンドプロンプトを開き
 
-      mksummary.exe 課題フォルダ名 --viewjs
+      mksummary.exe 課題フォルダ名 --viewerjs
    
    または
 
-      python mksummary.py --viewjs
+      python mksummary.py --viewerjs
 
 4. httpサーバーを立ち上げます. Python にはシンプルなhttpサーバーモジュールが付属しているのでこれを利用します.
 
