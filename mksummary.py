@@ -274,7 +274,8 @@ def main(output_buffer,
          root=pathlib.Path('.'),
          assignmentname='',
          html_output_encoding='utf-8',
-         enable_viewerjs='False'):
+         enable_viewerjs='False',
+         idlist=None):
     """
     root フォルダを巡回し, summary.html 等を出力する.
 
@@ -284,9 +285,12 @@ def main(output_buffer,
         assignmentname (str): title of HTML page
         html_output_encoding (str): encoding for output html
         enable_viwerjs (bool): ViewerJS でのプレビューに対応する.
+        idlist(pathlib.Path): ID-group-map.txt へのパス.
+            None ならば root / 'ID-group-map.txt'
     """
 
-    idlist = root / 'ID-group-map.txt'
+    if idlist is None:
+        idlist = root / 'ID-group-map.txt'
 
     writer = io.TextIOWrapper(output_buffer, encoding=html_output_encoding, newline='\n')
 
@@ -390,10 +394,17 @@ if __name__ == '__main__':
     parser.add_argument('--viewerjs', default=False,
                         action='store_true',
                         help='enable ViewerJS PDF viewer')
+    parser.add_argument('--idlist', type=str, default=None,
+            help='path to idlist (default: root / "ID-group-map.txt")')
 
     args = parser.parse_args()
 
     rootpath = pathlib.Path(args.root)
+    if args.idlist is None:
+        idlist = None
+    else:
+        idlist = pathlib.Path(args.idlist)
+
     if rootpath.is_file():
         rootpath = rootpath.parent
 
@@ -404,4 +415,4 @@ if __name__ == '__main__':
 
     with outputpath.open('wb') as output_buffer:
         main(output_buffer, root=rootpath, assignmentname=assignmentname,
-             enable_viewerjs=args.viewerjs)
+             enable_viewerjs=args.viewerjs, idlist=idlist)
