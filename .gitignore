@@ -4,3 +4,4 @@
 build
 dist
 mksummary.spec
+__pycache__

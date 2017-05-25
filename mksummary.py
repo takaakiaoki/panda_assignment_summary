@@ -130,7 +130,7 @@ def render_personalfolder(p,
             formname (str): このフォームの name 属性
             [data (str)]: テキストデータ
     """
-    def formatscoreform(s, defaulscore):
+    def formatscoreform(s, defaultscore=0):
         '''点数フォームをフォーマットする
 
         Args:
@@ -142,7 +142,7 @@ def render_personalfolder(p,
         '''
 
         f = '点数(score): <input type="text" value="{0:d}" name="{2:s}"> (0-{1:d})<br>'
-        return f.format(s['score'] if s['score'] is not None else 0,
+        return f.format(s['score'] if s['score'] is not None else defaultscore,
                         s['fullscore'],
                         s['formname'])
 
