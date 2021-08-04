@@ -4,6 +4,15 @@ panda_assignment_mksummary
 
 Japanse instruction: `README.rst <https://github.com/takaakiaoki/panda_assignment_summary/blob/master/README-e.rst>`_
 
+Warning
+=========
+
+The content of the repository is out-of-date, may not be comformant to the latest version of PandA, and **is not approved** by `Code for PandA <www.iimc.kyoto-u.ac.jp/ja/services/lms/>`_ project.
+
+
+About this software
+=====================
+
 For PandA, the materials submitted by assignment tool are distributed in separated folders for each user.
 However, this structure is not suitable for teacher to preview all materials quickly.
 
