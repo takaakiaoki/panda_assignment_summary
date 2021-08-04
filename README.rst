@@ -4,6 +4,18 @@ panda_assignment_mksummary
 
 English instruction: `README-e.rst <https://github.com/takaakiaoki/panda_assignment_summary/blob/master/README-e.rst>`_
 
+お断り
+======
+
+.. warning::
+  
+  このリポジトリの内容は, 京都大学の `Code for PandA <//www.iimc.kyoto-u.ac.jp/ja/services/lms/>`_ の対象ではありません.
+  
+  また, 作成者の異動に伴い, 最新のPandAの形式に適合していない可能性があります.
+
+このソフトウェアについて
+==========================
+
 PandA(Sakai) でダウンロードした課題ファイルは,
 ユーザー毎に分類されたフォルダに格納されるため,
 手早くプレビューすることが困難です.
