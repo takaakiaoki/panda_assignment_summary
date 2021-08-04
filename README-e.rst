@@ -2,7 +2,7 @@
 panda_assignment_mksummary
 ##########################
 
-Japanse instruction: `README.rst <https://github.com/takaakiaoki/panda_assignment_summary/blob/master/README-e.rst>`_
+Japanse instruction: `README.rst <https://github.com/takaakiaoki/panda_assignment_summary/blob/master/README.rst>`_
 
 Warning
 =========
